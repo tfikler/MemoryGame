@@ -2,8 +2,9 @@ import pygame
 import random
 import time
 
-# Initialize Pygame
+# Initialize Pygame and font module
 pygame.init()
+pygame.font.init()  # Initialize the font module
 
 # Screen dimensions and title
 SCREEN_WIDTH = 800
@@ -15,14 +16,16 @@ pygame.display.set_caption("Memory Game")
 BACKGROUND_COLOR = (30, 30, 30)
 WHITE = (255, 255, 255)
 GRAY = (150, 150, 150)
+BUTTON_COLOR = (0, 255, 0)
+BUTTON_TEXT_COLOR = (255, 255, 255)
 colors = [
     (255, 100, 100), (100, 255, 100), (100, 100, 255), (255, 255, 100),
     (255, 100, 255), (100, 255, 255), (255, 140, 0), (140, 70, 20)
 ]
 
 # Game variables
-tile_width = 100
-tile_height = 100
+tile_width = SCREEN_WIDTH // 5 - 40
+tile_height = (SCREEN_HEIGHT // 5) - 40
 tile_margin = 20
 tiles = []  # (color, matched)
 selected_tiles = []
@@ -33,6 +36,14 @@ for color in colors * 2:  # Duplicate each color to create pairs
     tiles.append((color, False))  # False indicates unmatched
 random.shuffle(tiles)
 
+# Timer and Font setup
+font = pygame.font.SysFont(None, 40)  # Create a font object
+start_time = time.time()  # Record the start time
+
+# Quit button setup
+button_font = pygame.font.SysFont(None, 30)
+quit_button = pygame.Rect(SCREEN_WIDTH - 150, SCREEN_HEIGHT - 60, 120, 40)
+
 
 def draw_tiles():
     screen.fill(BACKGROUND_COLOR)
@@ -40,7 +51,7 @@ def draw_tiles():
         row = i // 4
         col = i % 4
         x = col * (tile_width + tile_margin) + tile_margin
-        y = row * (tile_height + tile_margin) + tile_margin
+        y = row * (tile_height + tile_margin) + tile_margin + 40  # Adjust y to leave space for the timer
 
         if i in selected_tiles or matched:
             pygame.draw.rect(screen, color, (x, y, tile_width, tile_height))
@@ -49,6 +60,18 @@ def draw_tiles():
 
         # Draw border for aesthetic purposes
         pygame.draw.rect(screen, WHITE, (x, y, tile_width, tile_height), 3)
+
+    # Display the timer
+    elapsed_time = time.time() - start_time
+    minutes = int(elapsed_time // 60)
+    seconds = int(elapsed_time % 60)
+    timer_text = font.render(f"{minutes:02d}:{seconds:02d}", True, WHITE)
+    screen.blit(timer_text, (SCREEN_WIDTH - 100, 10))
+
+    # Draw quit button
+    pygame.draw.rect(screen, BUTTON_COLOR, quit_button)  # Quit button
+    quit_text = button_font.render('Quit', True, BUTTON_TEXT_COLOR)
+    screen.blit(quit_text, (quit_button.x + 35, quit_button.y + 10))
 
     pygame.display.flip()
 
@@ -59,6 +82,7 @@ def reveal_tiles(index):
 
 
 def check_match():
+    global tiles, selected_tiles
     if len(selected_tiles) == 2:
         idx1, idx2 = selected_tiles
         if tiles[idx1][0] == tiles[idx2][0]:
@@ -72,21 +96,30 @@ def check_match():
         selected_tiles.clear()
 
 
+def check_quit_button(x, y):
+    if quit_button.collidepoint(x, y):
+        pygame.quit()
+        exit()
+
+
 running = True
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        elif event.type == pygame.MOUSEBUTTONDOWN and len(selected_tiles) < 2:
+        elif event.type == pygame.MOUSEBUTTONDOWN:
             x, y = pygame.mouse.get_pos()
-            col = x // (tile_width + tile_margin)
-            row = y // (tile_height + tile_margin)
-            index = row * 4 + col
-            if index < len(tiles):
-                reveal_tiles(index)
-                if len(selected_tiles) == 2:
-                    check_match()
+            check_quit_button(x, y)  # Check if quit button was pressed
+            if not quit_button.collidepoint(x, y):  # Proceed if Quit button wasn't clicked
+                col = x // (tile_width + tile_margin)
+                row = (y - 40) // (tile_height + tile_margin)  # Adjust for the added y offset
+                index = row * 4 + col
+                if 0 <= index < len(tiles):
+                    reveal_tiles(index)
+                    if len(selected_tiles) == 2:
+                        check_match()
 
-    draw_tiles()
+        draw_tiles()
 
 pygame.quit()
+
