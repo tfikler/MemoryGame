@@ -44,6 +44,9 @@ start_time = time.time()  # Record the start time
 button_font = pygame.font.SysFont(None, 30)
 quit_button = pygame.Rect(SCREEN_WIDTH - 150, SCREEN_HEIGHT - 60, 120, 40)
 
+# Reset button setup
+reset_button = pygame.Rect(SCREEN_WIDTH - 300, SCREEN_HEIGHT - 60, 120, 40)
+
 
 def draw_tiles():
     screen.fill(BACKGROUND_COLOR)
@@ -72,6 +75,11 @@ def draw_tiles():
     pygame.draw.rect(screen, BUTTON_COLOR, quit_button)  # Quit button
     quit_text = button_font.render('Quit', True, BUTTON_TEXT_COLOR)
     screen.blit(quit_text, (quit_button.x + 35, quit_button.y + 10))
+
+    # Drawing the reset button in draw_tiles() function or wherever you draw your screen elements
+    pygame.draw.rect(screen, BUTTON_COLOR, reset_button)  # Reset button
+    reset_text = button_font.render('Reset', True, BUTTON_TEXT_COLOR)
+    screen.blit(reset_text, (reset_button.x + 30, reset_button.y + 10))
 
     pygame.display.flip()
 
@@ -121,6 +129,15 @@ while running:
             running = False
         elif event.type == pygame.MOUSEBUTTONDOWN:
             x, y = pygame.mouse.get_pos()
+            if reset_button.collidepoint(x, y):
+                tiles = []
+                for color in colors * 2:
+                    tiles.append((color, False))
+                random.shuffle(tiles)
+                selected_tiles.clear()
+                matching_tiles.clear()
+                start_time = time.time()
+                draw_tiles()
             check_quit_button(x, y)  # Check if quit button was pressed
             if not quit_button.collidepoint(x, y):  # Proceed if Quit button wasn't clicked
                 col = x // (tile_width + tile_margin)
