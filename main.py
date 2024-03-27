@@ -47,6 +47,7 @@ quit_button = pygame.Rect(SCREEN_WIDTH - 150, SCREEN_HEIGHT - 60, 120, 40)
 # Reset button setup
 reset_button = pygame.Rect(SCREEN_WIDTH - 300, SCREEN_HEIGHT - 60, 120, 40)
 
+pairs_found = 0
 
 def draw_tiles():
     screen.fill(BACKGROUND_COLOR)
@@ -90,7 +91,7 @@ def reveal_tiles(index):
 
 
 def check_match():
-    global tiles, selected_tiles
+    global tiles, selected_tiles, pairs_found
     if len(selected_tiles) == 2:
         idx1, idx2 = selected_tiles
         if tiles[idx1][0] == tiles[idx2][0]:
@@ -98,6 +99,9 @@ def check_match():
             tiles[idx2] = (tiles[idx2][0], True)
             matching_tiles.extend([idx1, idx2])
             play_match_correct_sound()
+            pairs_found += 1
+            if pairs_found == 8:
+                handle_game_won()
         else:
             # Reveal the second selected tile before hiding both
             play_not_match_sound()
@@ -120,6 +124,14 @@ def play_match_correct_sound():
 def play_not_match_sound():
     pygame.mixer.music.load('not_match_sound.mp3')
     pygame.mixer.music.play()
+
+
+def handle_game_won():
+    screen.fill(BACKGROUND_COLOR)
+    text = font.render("You won!", True, WHITE)
+    screen.blit(text, (SCREEN_WIDTH // 2 - 50, SCREEN_HEIGHT // 2 - 20))
+    pygame.display.flip()
+    pygame.time.wait(3000)
 
 
 running = True
