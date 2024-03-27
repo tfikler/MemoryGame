@@ -89,8 +89,10 @@ def check_match():
             tiles[idx1] = (tiles[idx1][0], True)
             tiles[idx2] = (tiles[idx2][0], True)
             matching_tiles.extend([idx1, idx2])
+            play_match_correct_sound()
         else:
             # Reveal the second selected tile before hiding both
+            play_not_match_sound()
             draw_tiles()
             pygame.time.wait(1000)  # Delay to show cards
         selected_tiles.clear()
@@ -100,6 +102,16 @@ def check_quit_button(x, y):
     if quit_button.collidepoint(x, y):
         pygame.quit()
         exit()
+
+
+def play_match_correct_sound():
+    pygame.mixer.music.load('match_sound.mp3')
+    pygame.mixer.music.play()
+
+
+def play_not_match_sound():
+    pygame.mixer.music.load('not_match_sound.mp3')
+    pygame.mixer.music.play()
 
 
 running = True
