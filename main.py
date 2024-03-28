@@ -231,9 +231,13 @@ def play_not_match_sound():
 
 
 def handle_game_won():
-    screen.fill(BACKGROUND_COLOR)
-    text = font.render("Well done!!", True, WHITE)
-    screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 2 - 20))
+    if num_players == 1:
+        handle_single_player_game_won()
+    else:
+        handle_two_player_game_won()
+
+
+def won_menu():
     pygame.draw.rect(screen, BUTTON_COLOR, play_again_button)
     play_again_text = button_font.render('Play Again', True, BUTTON_TEXT_COLOR)
     screen.blit(play_again_text, (play_again_button.x + 20, play_again_button.y + 10))
@@ -250,10 +254,31 @@ def handle_game_won():
                 x, y = pygame.mouse.get_pos()
                 if reset_button.collidepoint(x, y):
                     waiting_for_input = False
-                    # Reset the game state here
-                    reset_game()
                     # Reset timers
                     reset_timers()
+                    # Reset the game state here
+                    reset_game()
+
+
+def handle_single_player_game_won():
+    screen.fill(BACKGROUND_COLOR)
+    text = font.render("Well done!!", True, WHITE)
+    screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 2 - 20))
+    won_menu()
+
+
+def handle_two_player_game_won():
+    won_player = 1 if player_scores[0] > player_scores[1] else 2
+    if player_scores[0] == player_scores[1]:
+        screen.fill(BACKGROUND_COLOR)
+        text = font.render("It's a tie!!", True, WHITE)
+        screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 2 - 20))
+        won_menu()
+    else:
+        screen.fill(BACKGROUND_COLOR)
+        text = font.render(f"Player {won_player} wins!!", True, WHITE)
+        screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 2 - 20))
+        won_menu()
 
 
 def reset_game():
