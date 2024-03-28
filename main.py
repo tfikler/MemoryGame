@@ -1,6 +1,10 @@
+import threading
+
 import pygame
 import random
 import time
+from voice_controller import start_listening, load_model, stop_listening
+from word2number import w2n
 
 # Initialize Pygame and font module
 pygame.init()
@@ -59,6 +63,8 @@ attack_mode_button = pygame.Rect(SCREEN_WIDTH // 2 + 150, SCREEN_HEIGHT // 2 - 5
 
 # Voice control mode button setup
 voice_control_button = pygame.Rect(SCREEN_WIDTH // 2 - 350, SCREEN_HEIGHT // 2 - 50, 200, 50)
+is_voice_control = False
+user_text = []
 
 pairs_found = 0
 
@@ -143,7 +149,7 @@ def draw_scoreboard():
 
 
 def draw_player_selection():
-    global is_attack_mode
+    global is_attack_mode, is_voice_control
     screen.fill(BACKGROUND_COLOR)
     one_player_text = font.render('1 Player', True, WHITE)
     attack_mode_text = font.render('Attack Mode', True, WHITE)
@@ -168,9 +174,12 @@ def draw_player_selection():
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 print(True)
                 x, y = pygame.mouse.get_pos()
-                if one_player_button.collidepoint(x, y) or attack_mode_button.collidepoint(x, y):
+                if one_player_button.collidepoint(x, y) or attack_mode_button.collidepoint(x, y) or voice_control_button.collidepoint(x, y):
                     if attack_mode_button.collidepoint(x, y):
                         is_attack_mode = True
+                    if voice_control_button.collidepoint(x, y):
+                        is_voice_control = True
+                        load_model()
                     return 1
                 elif two_player_button.collidepoint(x, y):
                     return 2
@@ -333,6 +342,25 @@ def handle_game_lost_attack_mode():
     won_menu()
 
 
+def voice_control_main_loop():
+    global user_text
+    if user_text:
+        parsed_result = user_text.pop(0)
+        if parsed_result == 'reset':
+            reset_game()
+        elif parsed_result == 'quit':
+            pygame.quit()
+            exit()
+        else:
+            try:
+                index = int(w2n.word_to_num(parsed_result)) - 1
+                reveal_tiles(index)
+                if len(selected_tiles) == 2:
+                    check_match()
+            except ValueError:
+                print("Invalid input. Please enter a number between 1 and 16.")
+
+
 def reset_game():
     global tiles, selected_tiles, matching_tiles, start_time, player_timers, player_scores, current_player, pairs_found, game_start_time
     tiles = []
@@ -354,9 +382,18 @@ def reset_game():
 num_players = draw_player_selection()
 game_start_time = time.time()
 
+thread = threading.Thread(target=start_listening, args=(user_text,))
+
+if is_voice_control:
+    print("Starting voice control...")
+    thread.daemon = True
+    thread.start()
+
 running = True
 while running:
     update_timers()
+    if is_voice_control:
+        voice_control_main_loop()
     if time.time() - game_start_time > 60 and is_attack_mode:
         handle_game_lost_attack_mode()
         game_start_time = time.time()
@@ -379,5 +416,6 @@ while running:
 
         draw_tiles()
 
-pygame.quit()
 
+pygame.quit()
+stop_listening()
