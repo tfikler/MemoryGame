@@ -207,7 +207,18 @@ def draw_tiles():
 
 def reveal_tiles(index):
     if tiles[index][1] == False and index not in selected_tiles:
-        selected_tiles.append(index)
+        # Begin the "animation"
+        for intensity in range(1, 256, 25):  # Gradually increase the color intensity
+            color = [intensity * original_color // 255 for original_color in tiles[index][0]]
+            row = index // 4
+            col = index % 4
+            x = col * (tile_width + tile_margin) + tile_margin
+            y = row * (tile_height + tile_margin) + tile_margin + 40  # Adjust y to leave space for the scoreboard
+            pygame.draw.rect(screen, color, (x, y, tile_width, tile_height))
+            pygame.display.flip()  # Update the display to show the intermediate color
+            pygame.time.wait(50)  # Short delay to simulate the animation
+
+        selected_tiles.append(index)  # Finally, reveal the tile
 
 
 def check_match():
