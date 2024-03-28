@@ -60,8 +60,25 @@ pairs_found = 0
 player_scores = [0, 0]  # Player 1 and Player 2 scores
 player_timers = [0, 0]  # Player 1 and Player 2 timers
 
-start_time = [time.time(), 0]  # Start time for Player 1, Player 2 doesn't start until it's their turn
+start_time = [time.time(), time.time()]  # Start time for Player 1, Player 2 doesn't start until it's their turn
+pause_time = [0.0, 0.0]  # Pause time for Player 1, Player 2 doesn't pause until it's their turn
 current_player = 1  # Start with Player 1
+
+
+def switch_player():
+    global current_player, pause_time, start_time
+    # Pause the current player's timer
+    pause_timers()
+    # Switch player
+    current_player = 2 if current_player == 1 else 1
+    # Reset the start time for the new current player to now, so their timer starts from now
+    start_time[current_player - 1] = time.time()
+    pause_time[current_player - 1] = 0  # Ensure the new current player's pause time is reset
+
+
+def pause_timers():
+    global pause_time, current_player
+    pause_time[current_player - 1] = time.time()
 
 
 def reset_timers():
@@ -71,12 +88,18 @@ def reset_timers():
 
 
 def update_timers():
-    global player_timers
-    # Update only the current player's timer
-    elapsed_time = time.time() - start_time[current_player - 1]
+    global player_timers, start_time, pause_time
+    # Calculate elapsed time only for the current player
+    if pause_time[current_player - 1] != 0:
+        # If the pause time is set, calculate the time before pausing
+        elapsed_time = pause_time[current_player - 1] - start_time[current_player - 1]
+        pause_time[current_player - 1] = 0  # Reset pause time
+    else:
+        # Otherwise, calculate the time normally
+        elapsed_time = time.time() - start_time[current_player - 1]
+
     player_timers[current_player - 1] += elapsed_time
-    # Reset start time for the current player
-    start_time[current_player - 1] = time.time()
+    start_time[current_player - 1] = time.time()  # Reset start time for the current player
 
 
 def draw_scoreboard():
@@ -148,13 +171,6 @@ def draw_tiles():
         # Draw border for aesthetic purposes
         pygame.draw.rect(screen, WHITE, (x, y, tile_width, tile_height), 3)
 
-    # Display the timer
-    # elapsed_time = time.time() - start_time
-    # minutes = int(elapsed_time // 60)
-    # seconds = int(elapsed_time % 60)
-    # timer_text = font.render(f"{minutes:02d}:{seconds:02d}", True, WHITE)
-    # screen.blit(timer_text, (SCREEN_WIDTH - 100, 10))
-
     # Draw quit button
     pygame.draw.rect(screen, BUTTON_COLOR, quit_button)  # Quit button
     quit_text = button_font.render('Quit', True, BUTTON_TEXT_COLOR)
@@ -186,7 +202,7 @@ def check_match():
             play_match_correct_sound()
             pairs_found += 1
             player_scores[current_player - 1] += 1
-            if pairs_found == 4:
+            if pairs_found == len(tiles) // 2:
                 handle_game_won()
         else:
             # Reveal the second selected tile before hiding both
@@ -194,7 +210,7 @@ def check_match():
             draw_tiles()
             pygame.time.wait(1000)  # Delay to show cards
             if num_players == 2:
-                current_player = 1 if current_player == 2 else 2
+                switch_player()
         selected_tiles.clear()
 
 
@@ -236,6 +252,8 @@ def handle_game_won():
                     waiting_for_input = False
                     # Reset the game state here
                     reset_game()
+                    # Reset timers
+                    reset_timers()
 
 
 def reset_game():
