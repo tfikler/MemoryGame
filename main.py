@@ -207,18 +207,27 @@ def draw_tiles():
 
 def reveal_tiles(index):
     if tiles[index][1] == False and index not in selected_tiles:
-        # Begin the "animation"
-        for intensity in range(1, 256, 25):  # Gradually increase the color intensity
-            color = [intensity * original_color // 255 for original_color in tiles[index][0]]
-            row = index // 4
-            col = index % 4
-            x = col * (tile_width + tile_margin) + tile_margin
-            y = row * (tile_height + tile_margin) + tile_margin + 40  # Adjust y to leave space for the scoreboard
-            pygame.draw.rect(screen, color, (x, y, tile_width, tile_height))
-            pygame.display.flip()  # Update the display to show the intermediate color
-            pygame.time.wait(50)  # Short delay to simulate the animation
+        row = index // 4
+        col = index % 4
+        x = col * (tile_width + tile_margin) + tile_margin
+        y = row * (tile_height + tile_margin) + tile_margin + 40  # Adjust y to leave space for the scoreboard
 
-        selected_tiles.append(index)  # Finally, reveal the tile
+        # Phase 1: Shrink the tile to simulate flipping
+        for width in range(tile_width, 0, -10):
+            pygame.draw.rect(screen, BACKGROUND_COLOR, (x, y, tile_width, tile_height))  # Erase the old tile
+            pygame.draw.rect(screen, GRAY, (x + (tile_width - width) // 2, y, width, tile_height))
+            pygame.display.flip()
+            pygame.time.wait(25)  # Control the speed of the animation
+
+        # Phase 2: Expand the tile with the new color to simulate revealing
+        for width in range(0, tile_width + 1, 10):
+            new_color = tiles[index][0]  # The new color to reveal
+            pygame.draw.rect(screen, BACKGROUND_COLOR, (x, y, tile_width, tile_height))  # Erase the old tile
+            pygame.draw.rect(screen, new_color, (x + (tile_width - width) // 2, y, width, tile_height))
+            pygame.display.flip()
+            pygame.time.wait(25)  # Control the speed of the animation
+
+        selected_tiles.append(index)  # Add to selected tiles to reveal
 
 
 def check_match():
@@ -238,7 +247,7 @@ def check_match():
             # Reveal the second selected tile before hiding both
             play_not_match_sound()
             draw_tiles()
-            pygame.time.wait(1000)  # Delay to show cards
+            pygame.time.wait(400)  # Delay to show cards
             if num_players == 2:
                 switch_player()
         selected_tiles.clear()
