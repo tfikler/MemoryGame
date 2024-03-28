@@ -51,11 +51,14 @@ reset_button = pygame.Rect(SCREEN_WIDTH - 300, SCREEN_HEIGHT - 60, 120, 40)
 play_again_button = pygame.Rect(SCREEN_WIDTH - 300, SCREEN_HEIGHT - 50, 150, 40)
 
 # Player selection buttons setup
-one_player_button = pygame.Rect(SCREEN_WIDTH // 2 - 225, SCREEN_HEIGHT // 2 - 50, 200, 50)
+one_player_button = pygame.Rect(SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 50, 200, 50)
 two_player_button = pygame.Rect(SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 50, 200, 50)
 
 # Attack Mode button setup
-attack_mode_button = pygame.Rect(SCREEN_WIDTH // 2 + 25, SCREEN_HEIGHT // 2 - 50, 200, 50)
+attack_mode_button = pygame.Rect(SCREEN_WIDTH // 2 + 150, SCREEN_HEIGHT // 2 - 50, 200, 50)
+
+# Voice control mode button setup
+voice_control_button = pygame.Rect(SCREEN_WIDTH // 2 - 350, SCREEN_HEIGHT // 2 - 50, 200, 50)
 
 pairs_found = 0
 
@@ -145,12 +148,15 @@ def draw_player_selection():
     one_player_text = font.render('1 Player', True, WHITE)
     attack_mode_text = font.render('Attack Mode', True, WHITE)
     two_player_text = font.render('2 Players', True, WHITE)
+    voice_control_text = font.render('Voice Control', True, WHITE)
     pygame.draw.rect(screen, BUTTON_COLOR, one_player_button)
     pygame.draw.rect(screen, BUTTON_COLOR, attack_mode_button)
     pygame.draw.rect(screen, BUTTON_COLOR, two_player_button)
+    pygame.draw.rect(screen, BUTTON_COLOR, voice_control_button)
     screen.blit(one_player_text, (one_player_button.x + 10, one_player_button.y + 10))
     screen.blit(attack_mode_text, (attack_mode_button.x + 10, attack_mode_button.y + 10))
     screen.blit(two_player_text, (two_player_button.x + 10, two_player_button.y + 10))
+    screen.blit(voice_control_text, (voice_control_button.x + 10, voice_control_button.y + 10))
     pygame.display.flip()
 
     selecting = True
