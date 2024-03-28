@@ -51,10 +51,17 @@ reset_button = pygame.Rect(SCREEN_WIDTH - 300, SCREEN_HEIGHT - 60, 120, 40)
 play_again_button = pygame.Rect(SCREEN_WIDTH - 300, SCREEN_HEIGHT - 50, 150, 40)
 
 # Player selection buttons setup
-one_player_button = pygame.Rect(SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 50, 200, 50)
+one_player_button = pygame.Rect(SCREEN_WIDTH // 2 - 225, SCREEN_HEIGHT // 2 - 50, 200, 50)
 two_player_button = pygame.Rect(SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 50, 200, 50)
 
+# Attack Mode button setup
+attack_mode_button = pygame.Rect(SCREEN_WIDTH // 2 + 25, SCREEN_HEIGHT // 2 - 50, 200, 50)
+
 pairs_found = 0
+
+# initialize attack mode timer
+attack_mode_timer = 0
+is_attack_mode = False
 
 # Initialize scores and timers
 player_scores = [0, 0]  # Player 1 and Player 2 scores
@@ -103,8 +110,14 @@ def update_timers():
 
 
 def draw_scoreboard():
+    global attack_mode_button, attack_mode_timer
     padding = 10  # Padding inside the scoreboard
     line_spacing = 5  # Space between lines
+
+    if is_attack_mode:
+        # Display a warning message that the attack mode is active and user have 60 seconds to finish the game
+        attack_mode_text = font.render('Attack Mode - You have 60 seconds to finish the game', True, WHITE)
+        screen.blit(attack_mode_text, (SCREEN_WIDTH // 2 - attack_mode_text.get_width() // 2, 10))
 
     for i in range(num_players):
         base_x = 20 + (SCREEN_WIDTH / 3) * i  # Adjust base X for better spacing
@@ -127,12 +140,16 @@ def draw_scoreboard():
 
 
 def draw_player_selection():
+    global is_attack_mode
     screen.fill(BACKGROUND_COLOR)
     one_player_text = font.render('1 Player', True, WHITE)
+    attack_mode_text = font.render('Attack Mode', True, WHITE)
     two_player_text = font.render('2 Players', True, WHITE)
     pygame.draw.rect(screen, BUTTON_COLOR, one_player_button)
+    pygame.draw.rect(screen, BUTTON_COLOR, attack_mode_button)
     pygame.draw.rect(screen, BUTTON_COLOR, two_player_button)
     screen.blit(one_player_text, (one_player_button.x + 10, one_player_button.y + 10))
+    screen.blit(attack_mode_text, (attack_mode_button.x + 10, attack_mode_button.y + 10))
     screen.blit(two_player_text, (two_player_button.x + 10, two_player_button.y + 10))
     pygame.display.flip()
 
@@ -145,7 +162,9 @@ def draw_player_selection():
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 print(True)
                 x, y = pygame.mouse.get_pos()
-                if one_player_button.collidepoint(x, y):
+                if one_player_button.collidepoint(x, y) or attack_mode_button.collidepoint(x, y):
+                    if attack_mode_button.collidepoint(x, y):
+                        is_attack_mode = True
                     return 1
                 elif two_player_button.collidepoint(x, y):
                     return 2
@@ -281,8 +300,15 @@ def handle_two_player_game_won():
         won_menu()
 
 
+def handle_game_lost_attack_mode():
+    screen.fill(BACKGROUND_COLOR)
+    text = font.render("You lost!!", True, WHITE)
+    screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 2 - 20))
+    won_menu()
+
+
 def reset_game():
-    global tiles, selected_tiles, matching_tiles, start_time, player_timers, player_scores, current_player, pairs_found
+    global tiles, selected_tiles, matching_tiles, start_time, player_timers, player_scores, current_player, pairs_found, game_start_time
     tiles = []
     for color in colors * 2:  # Duplicate each color to create pairs
         tiles.append((color, False))  # False indicates unmatched
@@ -295,13 +321,19 @@ def reset_game():
     player_scores = [0, 0]  # Reset scores for both players
     current_player = 1  # Reset to start with Player 1
     draw_tiles()
+    if is_attack_mode:
+        game_start_time = time.time()
 
 
 num_players = draw_player_selection()
+game_start_time = time.time()
 
 running = True
 while running:
     update_timers()
+    if time.time() - game_start_time > 60 and is_attack_mode:
+        handle_game_lost_attack_mode()
+        game_start_time = time.time()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
