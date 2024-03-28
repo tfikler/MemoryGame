@@ -354,9 +354,11 @@ def voice_control_main_loop():
         else:
             try:
                 index = int(w2n.word_to_num(parsed_result)) - 1
-                reveal_tiles(index)
-                if len(selected_tiles) == 2:
-                    check_match()
+                if 0 <= index < len(tiles):
+                    reveal_tiles(index)
+                    if len(selected_tiles) == 2:
+                        check_match()
+                        draw_tiles()
             except ValueError:
                 print("Invalid input. Please enter a number between 1 and 16.")
 
