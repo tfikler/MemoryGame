@@ -47,7 +47,11 @@ quit_button = pygame.Rect(SCREEN_WIDTH - 150, SCREEN_HEIGHT - 60, 120, 40)
 # Reset button setup
 reset_button = pygame.Rect(SCREEN_WIDTH - 300, SCREEN_HEIGHT - 60, 120, 40)
 
+# Play again button setup
+play_again_button = pygame.Rect(SCREEN_WIDTH - 300, SCREEN_HEIGHT - 50, 150, 40)
+
 pairs_found = 0
+
 
 def draw_tiles():
     screen.fill(BACKGROUND_COLOR)
@@ -100,7 +104,7 @@ def check_match():
             matching_tiles.extend([idx1, idx2])
             play_match_correct_sound()
             pairs_found += 1
-            if pairs_found == 8:
+            if pairs_found == 2:
                 handle_game_won()
         else:
             # Reveal the second selected tile before hiding both
@@ -129,9 +133,37 @@ def play_not_match_sound():
 def handle_game_won():
     screen.fill(BACKGROUND_COLOR)
     text = font.render("You won!", True, WHITE)
-    screen.blit(text, (SCREEN_WIDTH // 2 - 50, SCREEN_HEIGHT // 2 - 20))
+    screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 2 - 20))
+    pygame.draw.rect(screen, BUTTON_COLOR, play_again_button)
+    play_again_text = button_font.render('Play Again', True, BUTTON_TEXT_COLOR)
+    screen.blit(play_again_text, (play_again_button.x + 20, play_again_button.y + 10))
     pygame.display.flip()
-    pygame.time.wait(3000)
+
+    # Wait for Play Again button click
+    waiting_for_input = True
+    while waiting_for_input:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                x, y = pygame.mouse.get_pos()
+                if reset_button.collidepoint(x, y):
+                    waiting_for_input = False
+                    # Reset the game state here
+                    reset_game()
+
+
+def reset_game():
+    global tiles, selected_tiles, matching_tiles, start_time
+    tiles = []
+    for color in colors * 2:
+        tiles.append((color, False))
+    random.shuffle(tiles)
+    selected_tiles = []
+    matching_tiles = []
+    start_time = time.time()
+    # Ensure any additional reset steps are included here
 
 
 running = True
