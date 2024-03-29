@@ -27,6 +27,11 @@ colors = [
     (255, 100, 255), (100, 255, 255), (255, 140, 0), (140, 70, 20)
 ]
 
+# Image paths for wild mode
+image_paths = ['assets/e^x graph.png', 'assets/e^x.png', 'assets/sinx.png', 'assets/sinx_graph.png', 'assets/tanx.png', 'assets/tanx_graph.jpeg',
+                   'assets/1overx.png', 'assets/1overx_graph.png', 'assets/lnx.png', 'assets/lnx_graph.png', 'assets/nd_graph.png', 'assets/nd.jpeg',
+                   'assets/x^2.png', 'assets/x^2_graph.png', 'assets/absx.png', 'assets/absx_graph.png']
+
 # Game variables
 tile_width = SCREEN_WIDTH // 5 - 40
 tile_height = (SCREEN_HEIGHT // 5) - 40
@@ -65,6 +70,10 @@ attack_mode_button = pygame.Rect(SCREEN_WIDTH // 2 + 150, SCREEN_HEIGHT // 2 - 5
 voice_control_button = pygame.Rect(SCREEN_WIDTH // 2 - 350, SCREEN_HEIGHT // 2 - 50, 200, 50)
 is_voice_control = False
 user_text = []
+
+# Wild mode button setup
+wild_mode_button = pygame.Rect(SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 150, 200, 50)
+is_wild_mode = False
 
 pairs_found = 0
 
@@ -119,7 +128,7 @@ def update_timers():
 
 
 def draw_scoreboard():
-    global attack_mode_button, attack_mode_timer
+    global attack_mode_button, attack_mode_timer, tiles
     padding = 10  # Padding inside the scoreboard
     line_spacing = 5  # Space between lines
 
@@ -127,6 +136,13 @@ def draw_scoreboard():
         # Display a warning message that the attack mode is active and user have 60 seconds to finish the game
         attack_mode_text = font.render('Attack Mode - You have 60 seconds to finish the game', True, WHITE)
         screen.blit(attack_mode_text, (SCREEN_WIDTH // 2 - attack_mode_text.get_width() // 2, 10))
+
+    if is_wild_mode:
+        # Display a message that the wild mode is active and user have to find the function and its derivative
+        wild_mode_text = font.render('Wild Mode - Find the function and its derivative', True, WHITE)
+        screen.blit(wild_mode_text, (SCREEN_WIDTH // 2 - wild_mode_text.get_width() // 2, 10))
+
+
 
     for i in range(num_players):
         base_x = 20 + (SCREEN_WIDTH / 3) * i  # Adjust base X for better spacing
@@ -148,21 +164,33 @@ def draw_scoreboard():
         screen.blit(timer_text, (base_x, timer_text_y))
 
 
+def load_images(paths):
+    images = []
+    for path in paths:
+        image = pygame.image.load(path)
+        image = pygame.transform.scale(image, (tile_width, tile_height))  # Scale images to fit tiles
+        images.append((image, False))
+    return images
+
+
 def draw_player_selection():
-    global is_attack_mode, is_voice_control
+    global is_attack_mode, is_voice_control, is_wild_mode
     screen.fill(BACKGROUND_COLOR)
     one_player_text = font.render('1 Player', True, WHITE)
     attack_mode_text = font.render('Attack Mode', True, WHITE)
     two_player_text = font.render('2 Players', True, WHITE)
     voice_control_text = font.render('Voice Control', True, WHITE)
+    wild_mode_text = font.render('Wild Mode', True, WHITE)
     pygame.draw.rect(screen, BUTTON_COLOR, one_player_button)
     pygame.draw.rect(screen, BUTTON_COLOR, attack_mode_button)
     pygame.draw.rect(screen, BUTTON_COLOR, two_player_button)
     pygame.draw.rect(screen, BUTTON_COLOR, voice_control_button)
+    pygame.draw.rect(screen, BUTTON_COLOR, wild_mode_button)
     screen.blit(one_player_text, (one_player_button.x + 10, one_player_button.y + 10))
     screen.blit(attack_mode_text, (attack_mode_button.x + 10, attack_mode_button.y + 10))
     screen.blit(two_player_text, (two_player_button.x + 10, two_player_button.y + 10))
     screen.blit(voice_control_text, (voice_control_button.x + 10, voice_control_button.y + 10))
+    screen.blit(wild_mode_text, (wild_mode_button.x + 10, wild_mode_button.y + 10))
     pygame.display.flip()
 
     selecting = True
@@ -174,12 +202,15 @@ def draw_player_selection():
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 print(True)
                 x, y = pygame.mouse.get_pos()
-                if one_player_button.collidepoint(x, y) or attack_mode_button.collidepoint(x, y) or voice_control_button.collidepoint(x, y):
+                if one_player_button.collidepoint(x, y) or attack_mode_button.collidepoint(x, y) or voice_control_button.collidepoint(x, y)\
+                        or wild_mode_button.collidepoint(x, y):
                     if attack_mode_button.collidepoint(x, y):
                         is_attack_mode = True
                     if voice_control_button.collidepoint(x, y):
                         is_voice_control = True
                         load_model()
+                    if wild_mode_button.collidepoint(x, y):
+                        is_wild_mode = True
                     return 1
                 elif two_player_button.collidepoint(x, y):
                     return 2
@@ -187,14 +218,18 @@ def draw_player_selection():
 
 def draw_tiles():
     screen.fill(BACKGROUND_COLOR)
-    for i, (color, matched) in enumerate(tiles):
+    for i, tile in enumerate(tiles):
+        value, matched = tile
         row = i // 4
         col = i % 4
         x = col * (tile_width + tile_margin) + tile_margin
         y = row * (tile_height + tile_margin) + tile_margin + 40  # Adjust y to leave space for the timer
 
         if i in selected_tiles or matched:
-            pygame.draw.rect(screen, color, (x, y, tile_width, tile_height))
+            if isinstance(value, pygame.Surface):
+                screen.blit(value, (x, y))
+            else:
+                pygame.draw.rect(screen, color, (x, y, tile_width, tile_height))
         else:
             pygame.draw.rect(screen, GRAY, (x, y, tile_width, tile_height))
 
@@ -221,6 +256,9 @@ def draw_tiles():
 
 
 def reveal_tiles(index):
+    global tiles, selected_tiles
+    if not tiles[index][1] and index not in selected_tiles:
+        selected_tiles.append(index)
     if tiles[index][1] == False and index not in selected_tiles:
         row = index // 4
         col = index % 4
@@ -379,6 +417,14 @@ def reset_game():
     draw_tiles()
     if is_attack_mode:
         game_start_time = time.time()
+    if is_wild_mode:
+        initialize_wild_mode()
+
+
+def initialize_wild_mode():
+    global tiles
+    tiles = load_images(image_paths)
+    random.shuffle(tiles)
 
 
 num_players = draw_player_selection()
@@ -390,6 +436,10 @@ if is_voice_control:
     print("Starting voice control...")
     thread.daemon = True
     thread.start()
+
+if is_wild_mode:
+    print("Starting wild mode...")
+    initialize_wild_mode()
 
 running = True
 while running:
