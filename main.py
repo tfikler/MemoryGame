@@ -256,7 +256,7 @@ def draw_tiles():
 
 
 def reveal_tiles(index):
-    global tiles, selected_tiles
+    global tiles, selected_tiles, is_wild_mode
     if tiles[index][1] == False and index not in selected_tiles:
         print(f"Revealing tile at index {index}")
         row = index // 4
@@ -275,7 +275,11 @@ def reveal_tiles(index):
         for width in range(0, tile_width + 1, 10):
             new_color = tiles[index][0]  # The new color to reveal
             pygame.draw.rect(screen, BACKGROUND_COLOR, (x, y, tile_width, tile_height))  # Erase the old tile
-            pygame.draw.rect(screen, new_color, (x + (tile_width - width) // 2, y, width, tile_height))
+            if isinstance(new_color, pygame.Surface):
+                temp_surface = pygame.transform.scale(new_color, (width, tile_height))
+                screen.blit(temp_surface, (x + (tile_width - width) // 2, y))
+            else:
+                pygame.draw.rect(screen, new_color, (x + (tile_width - width) // 2, y, width, tile_height))
             pygame.display.flip()
             pygame.time.wait(25)  # Control the speed of the animation
 
