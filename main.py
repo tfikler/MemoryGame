@@ -18,10 +18,12 @@ pygame.display.set_caption("Memory Game")
 
 # Colors
 BACKGROUND_COLOR = (30, 30, 30)
+background = pygame.image.load('img.png')
 WHITE = (255, 255, 255)
 GRAY = (150, 150, 150)
-BUTTON_COLOR = (0, 255, 0)
-BUTTON_TEXT_COLOR = (255, 255, 255)
+BUTTON_COLOR = (143, 85, 45)
+BORDER_COLOR = (249, 244, 229)
+BUTTON_TEXT_COLOR = (232, 237, 238)
 colors = [
     (255, 100, 100), (100, 255, 100), (100, 100, 255), (255, 255, 100),
     (255, 100, 255), (100, 255, 255), (255, 140, 0), (140, 70, 20)
@@ -47,35 +49,37 @@ random.shuffle(tiles)
 
 # Timer and Font setup
 font = pygame.font.SysFont(None, 40)  # Create a font object
+board_font = pygame.font.SysFont(None, 35)
 # start_time = time.time()  # Record the start time
 
 # Quit button setup
 button_font = pygame.font.SysFont(None, 30)
-quit_button = pygame.Rect(SCREEN_WIDTH - 150, SCREEN_HEIGHT - 60, 120, 40)
+quit_button = pygame.Rect(SCREEN_WIDTH - 125, SCREEN_HEIGHT - 45, 120, 40)
 
 # Reset button setup
-reset_button = pygame.Rect(SCREEN_WIDTH - 300, SCREEN_HEIGHT - 60, 120, 40)
+reset_button = pygame.Rect(SCREEN_WIDTH - 260, SCREEN_HEIGHT - 45, 120, 40)
 
 # Play again button setup
-play_again_button = pygame.Rect(SCREEN_WIDTH - 300, SCREEN_HEIGHT - 50, 150, 40)
+play_again_button = pygame.Rect(SCREEN_WIDTH - 155, SCREEN_HEIGHT - 45, 150, 40)
 
 # Player selection buttons setup
-one_player_button = pygame.Rect(SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 50, 200, 50)
-two_player_button = pygame.Rect(SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 50, 200, 50)
+one_player_button = pygame.Rect(SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 250, 200, 50)
+two_player_button = pygame.Rect(SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 175, 200, 50)
 
 # Attack Mode button setup
-attack_mode_button = pygame.Rect(SCREEN_WIDTH // 2 + 150, SCREEN_HEIGHT // 2 - 50, 200, 50)
+attack_mode_button = pygame.Rect(SCREEN_WIDTH // 2 + 150, SCREEN_HEIGHT // 2 - 250, 200, 50)
 
 # Voice control mode button setup
-voice_control_button = pygame.Rect(SCREEN_WIDTH // 2 - 350, SCREEN_HEIGHT // 2 - 50, 200, 50)
+voice_control_button = pygame.Rect(SCREEN_WIDTH // 2 - 350, SCREEN_HEIGHT // 2 - 250, 200, 50)
 is_voice_control = False
 user_text = []
 
 # Wild mode button setup
-wild_mode_button = pygame.Rect(SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 150, 200, 50)
+wild_mode_button = pygame.Rect(SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 100, 200, 50)
 is_wild_mode = False
 
 pairs_found = 0
+first_turn = True
 
 # initialize attack mode timer
 attack_mode_timer = 0
@@ -85,7 +89,7 @@ is_attack_mode = False
 player_scores = [0, 0]  # Player 1 and Player 2 scores
 player_timers = [0, 0]  # Player 1 and Player 2 timers
 
-start_time = [time.time(), time.time()]  # Start time for Player 1, Player 2 doesn't start until it's their turn
+# start_time = [time.time(), time.time()]  # Start time for Player 1, Player 2 doesn't start until it's their turn
 pause_time = [0.0, 0.0]  # Pause time for Player 1, Player 2 doesn't pause until it's their turn
 current_player = 1  # Start with Player 1
 
@@ -128,7 +132,7 @@ def update_timers():
 
 
 def draw_scoreboard():
-    global attack_mode_button, attack_mode_timer, tiles
+    global attack_mode_button, attack_mode_timer, tiles, first_turn, game_start_time
     padding = 10  # Padding inside the scoreboard
     line_spacing = 5  # Space between lines
 
@@ -139,28 +143,26 @@ def draw_scoreboard():
 
     if is_wild_mode:
         # Display a message that the wild mode is active and user have to find the function and its derivative
-        wild_mode_text = font.render('Wild Mode - Find the function and its derivative', True, WHITE)
+        wild_mode_text = font.render('Wild Mode - Find the function and its graph', True, WHITE)
         screen.blit(wild_mode_text, (SCREEN_WIDTH // 2 - wild_mode_text.get_width() // 2, 10))
 
-
-
     for i in range(num_players):
-        base_x = 20 + (SCREEN_WIDTH / 3) * i  # Adjust base X for better spacing
-        text_y = SCREEN_HEIGHT - 100  # Position scoreboard higher
+        base_x = 20 + (SCREEN_WIDTH / 3) * i * 0.75  # Adjust base X for better spacing
+        text_y = SCREEN_HEIGHT - 90  # Position scoreboard higher
 
         # Player Text
-        player_text = font.render(f"Player {i + 1}:", True, WHITE)
+        player_text = board_font.render(f"Player {i + 1}:", True, WHITE)
         screen.blit(player_text, (base_x, text_y))
 
         # Score Text
         score_text_y = text_y + player_text.get_height() + line_spacing
-        score_text = font.render(f"Score: {player_scores[i]}", True, WHITE)
+        score_text = board_font.render(f"Score: {player_scores[i]}", True, WHITE)
         screen.blit(score_text, (base_x, score_text_y))
 
         # Timer Text
         timer_text_y = score_text_y + score_text.get_height() + line_spacing
         minutes, seconds = divmod(int(player_timers[i]), 60)
-        timer_text = font.render(f"Time: {minutes:02d}:{seconds:02d}", True, WHITE)
+        timer_text = board_font.render(f"Time: {minutes:02d}:{seconds:02d}", True, WHITE)
         screen.blit(timer_text, (base_x, timer_text_y))
 
 
@@ -177,8 +179,8 @@ def load_images(paths):
 
 
 def draw_player_selection():
-    global is_attack_mode, is_voice_control, is_wild_mode
-    screen.fill(BACKGROUND_COLOR)
+    global is_attack_mode, is_voice_control, is_wild_mode, game_start_time
+    screen.blit(background, (0, 0))
     one_player_text = font.render('1 Player', True, WHITE)
     attack_mode_text = font.render('Attack Mode', True, WHITE)
     two_player_text = font.render('2 Players', True, WHITE)
@@ -189,11 +191,11 @@ def draw_player_selection():
     pygame.draw.rect(screen, BUTTON_COLOR, two_player_button)
     pygame.draw.rect(screen, BUTTON_COLOR, voice_control_button)
     pygame.draw.rect(screen, BUTTON_COLOR, wild_mode_button)
-    screen.blit(one_player_text, (one_player_button.x + 10, one_player_button.y + 10))
-    screen.blit(attack_mode_text, (attack_mode_button.x + 10, attack_mode_button.y + 10))
-    screen.blit(two_player_text, (two_player_button.x + 10, two_player_button.y + 10))
+    screen.blit(one_player_text, (one_player_button.x + 40, one_player_button.y + 10))
+    screen.blit(attack_mode_text, (attack_mode_button.x + 15, attack_mode_button.y + 10))
+    screen.blit(two_player_text, (two_player_button.x + 40, two_player_button.y + 10))
     screen.blit(voice_control_text, (voice_control_button.x + 10, voice_control_button.y + 10))
-    screen.blit(wild_mode_text, (wild_mode_button.x + 10, wild_mode_button.y + 10))
+    screen.blit(wild_mode_text, (wild_mode_button.x + 30, wild_mode_button.y + 10))
     pygame.display.flip()
 
     selecting = True
@@ -220,7 +222,8 @@ def draw_player_selection():
 
 
 def draw_tiles():
-    screen.fill(BACKGROUND_COLOR)
+    global is_voice_control
+    screen.blit(background, (0, 0))
     for i, tile in enumerate(tiles):
         value, matched, pic_name = tile
         row = i // 4
@@ -237,7 +240,7 @@ def draw_tiles():
             pygame.draw.rect(screen, GRAY, (x, y, tile_width, tile_height))
 
         # Draw the number of the tile
-        if not matched:
+        if not matched and is_voice_control:
             tile_number = font.render(str(i + 1), True, WHITE)
             screen.blit(tile_number, (x + 10, y + 10))
 
@@ -364,7 +367,7 @@ def won_menu():
                 exit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 x, y = pygame.mouse.get_pos()
-                if reset_button.collidepoint(x, y):
+                if play_again_button.collidepoint(x, y):
                     waiting_for_input = False
                     # Reset timers
                     reset_timers()
@@ -373,8 +376,8 @@ def won_menu():
 
 
 def handle_single_player_game_won():
-    screen.fill(BACKGROUND_COLOR)
-    text = font.render("Well done!!", True, WHITE)
+    screen.blit(background, (0,0))
+    text = font.render("Well done!!", True, GRAY)
     screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 2 - 20))
     won_menu()
 
@@ -382,20 +385,20 @@ def handle_single_player_game_won():
 def handle_two_player_game_won():
     won_player = 1 if player_scores[0] > player_scores[1] else 2
     if player_scores[0] == player_scores[1]:
-        screen.fill(BACKGROUND_COLOR)
-        text = font.render("It's a tie!!", True, WHITE)
+        screen.blit(background, (0,0))
+        text = font.render("It's a tie!!", True, GRAY)
         screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 2 - 20))
         won_menu()
     else:
-        screen.fill(BACKGROUND_COLOR)
-        text = font.render(f"Player {won_player} wins!!", True, WHITE)
+        screen.blit(background, (0,0))
+        text = font.render(f"Player {won_player} wins!!", True, GRAY)
         screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 2 - 20))
         won_menu()
 
 
 def handle_game_lost_attack_mode():
-    screen.fill(BACKGROUND_COLOR)
-    text = font.render("You lost!!", True, WHITE)
+    screen.blit(background, (0,0))
+    text = font.render("You lost!!", True, GRAY)
     screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 2 - 20))
     won_menu()
 
@@ -472,6 +475,7 @@ def wild_mode_check_match():
 
 num_players = draw_player_selection()
 game_start_time = time.time()
+start_time = [time.time(), 0]  # Start time for Player 1, Player 2 doesn't start until it's their turn
 
 thread = threading.Thread(target=start_listening, args=(user_text,))
 
