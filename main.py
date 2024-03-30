@@ -229,7 +229,7 @@ def draw_tiles():
             if isinstance(value, pygame.Surface):
                 screen.blit(value, (x, y))
             else:
-                pygame.draw.rect(screen, color, (x, y, tile_width, tile_height))
+                pygame.draw.rect(screen, value, (x, y, tile_width, tile_height))
         else:
             pygame.draw.rect(screen, GRAY, (x, y, tile_width, tile_height))
 
@@ -257,9 +257,8 @@ def draw_tiles():
 
 def reveal_tiles(index):
     global tiles, selected_tiles
-    if not tiles[index][1] and index not in selected_tiles:
-        selected_tiles.append(index)
     if tiles[index][1] == False and index not in selected_tiles:
+        print(f"Revealing tile at index {index}")
         row = index // 4
         col = index % 4
         x = col * (tile_width + tile_margin) + tile_margin
