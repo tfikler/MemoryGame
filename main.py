@@ -503,6 +503,8 @@ while running:
             if not quit_button.collidepoint(x, y):  # Proceed if Quit button wasn't clicked
                 col = x // (tile_width + tile_margin)
                 row = (y - 40) // (tile_height + tile_margin)  # Adjust for the added y offset
+                if col > 3 or row > 3:
+                    continue
                 index = row * 4 + col
                 if 0 <= index < len(tiles):
                     reveal_tiles(index)
@@ -516,4 +518,5 @@ while running:
 
 
 pygame.quit()
-stop_listening()
+if is_voice_control:
+    stop_listening()
