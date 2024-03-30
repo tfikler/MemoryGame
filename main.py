@@ -236,6 +236,11 @@ def draw_tiles():
         else:
             pygame.draw.rect(screen, GRAY, (x, y, tile_width, tile_height))
 
+        # Draw the number of the tile
+        if not matched:
+            tile_number = font.render(str(i + 1), True, WHITE)
+            screen.blit(tile_number, (x + 10, y + 10))
+
         if num_players == 2:
             player_text = font.render(f'Player {current_player}', True, WHITE)
             screen.blit(player_text, (10, 10))
