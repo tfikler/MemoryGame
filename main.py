@@ -28,7 +28,7 @@ colors = [
 ]
 
 # Image paths for wild mode
-image_paths = ['assets/e^x graph.png', 'assets/e^x.png', 'assets/sinx.png', 'assets/sinx_graph.png', 'assets/tanx.png', 'assets/tanx_graph.jpeg',
+image_paths = ['assets/e^x_graph.png', 'assets/e^x.png', 'assets/sinx.png', 'assets/sinx_graph.png', 'assets/tanx.png', 'assets/tanx_graph.jpeg',
                    'assets/1overx.png', 'assets/1overx_graph.png', 'assets/lnx.png', 'assets/lnx_graph.png', 'assets/nd_graph.png', 'assets/nd.jpeg',
                    'assets/x^2.png', 'assets/x^2_graph.png', 'assets/absx.png', 'assets/absx_graph.png']
 
@@ -42,7 +42,7 @@ matching_tiles = []
 
 # Initialize tiles
 for color in colors * 2:  # Duplicate each color to create pairs
-    tiles.append((color, False))  # False indicates unmatched
+    tiles.append((color, False, None))  # False indicates unmatched
 random.shuffle(tiles)
 
 # Timer and Font setup
@@ -168,8 +168,11 @@ def load_images(paths):
     images = []
     for path in paths:
         image = pygame.image.load(path)
+        image_name = path.split('/')[-1]  # Extracts the filename from the path
+        # Remove the '.png' or '.jpeg' extension and 'graph' word from the filename
+        base_name = image_name.replace('.png', '').replace('.jpeg', '').replace('_graph', '')
         image = pygame.transform.scale(image, (tile_width, tile_height))  # Scale images to fit tiles
-        images.append((image, False))
+        images.append((image, False, base_name))
     return images
 
 
@@ -219,7 +222,7 @@ def draw_player_selection():
 def draw_tiles():
     screen.fill(BACKGROUND_COLOR)
     for i, tile in enumerate(tiles):
-        value, matched = tile
+        value, matched, pic_name = tile
         row = i // 4
         col = i % 4
         x = col * (tile_width + tile_margin) + tile_margin
@@ -286,19 +289,28 @@ def reveal_tiles(index):
         selected_tiles.append(index)  # Add to selected tiles to reveal
 
 
+def update_if_match(idx1, idx2):
+    global pairs_found, player_scores, current_player
+    matching_tiles.extend([idx1, idx2])
+    play_match_correct_sound()
+    pairs_found += 1
+    player_scores[current_player - 1] += 1
+    if pairs_found == len(tiles) // 2:
+        handle_game_won()
+
+
 def check_match():
     global tiles, selected_tiles, pairs_found, current_player
     if len(selected_tiles) == 2:
         idx1, idx2 = selected_tiles
-        if tiles[idx1][0] == tiles[idx2][0]:
-            tiles[idx1] = (tiles[idx1][0], True)
-            tiles[idx2] = (tiles[idx2][0], True)
-            matching_tiles.extend([idx1, idx2])
-            play_match_correct_sound()
-            pairs_found += 1
-            player_scores[current_player - 1] += 1
-            if pairs_found == len(tiles) // 2:
-                handle_game_won()
+        if tiles[idx1][2] == tiles[idx2][2] and is_wild_mode:
+            tiles[idx1] = (tiles[idx1][0], True, tiles[idx1][2])
+            tiles[idx2] = (tiles[idx2][0], True, tiles[idx2][2])
+            update_if_match(idx1, idx2)
+        elif tiles[idx1][0] == tiles[idx2][0]:
+            tiles[idx1] = (tiles[idx1][0], True, None)
+            tiles[idx2] = (tiles[idx2][0], True, None)
+            update_if_match(idx1, idx2)
         else:
             # Reveal the second selected tile before hiding both
             play_not_match_sound()
@@ -408,7 +420,7 @@ def reset_game():
     global tiles, selected_tiles, matching_tiles, start_time, player_timers, player_scores, current_player, pairs_found, game_start_time
     tiles = []
     for color in colors * 2:  # Duplicate each color to create pairs
-        tiles.append((color, False))  # False indicates unmatched
+        tiles.append((color, False, None))  # False indicates unmatched
     random.shuffle(tiles)
     selected_tiles = []
     matching_tiles = []
@@ -428,6 +440,29 @@ def initialize_wild_mode():
     global tiles
     tiles = load_images(image_paths)
     random.shuffle(tiles)
+
+
+def wild_mode_check_match():
+    global pairs_found
+    if len(selected_tiles) == 2:
+        idx1, idx2 = selected_tiles
+        names = [tiles[idx1][2], tiles[idx2][2]]
+        print(names)
+        if names[0] == names[1]:
+            tiles[idx1] = (tiles[idx1][0], True, tiles[idx1][2])
+            tiles[idx2] = (tiles[idx2][0], True, tiles[idx2][2])
+            matching_tiles.extend([idx1, idx2])
+            play_match_correct_sound()
+            pairs_found += 1
+            player_scores[current_player - 1] += 1
+            if pairs_found == len(tiles) // 2:
+                handle_game_won()
+        else:
+            # Reveal the second selected tile before hiding both
+            play_not_match_sound()
+            draw_tiles()
+            pygame.time.wait(400)  # Delay to show cards
+        selected_tiles.clear()
 
 
 num_players = draw_player_selection()
@@ -467,7 +502,10 @@ while running:
                 if 0 <= index < len(tiles):
                     reveal_tiles(index)
                     if len(selected_tiles) == 2:
-                        check_match()
+                        if is_wild_mode:
+                            wild_mode_check_match()
+                        else:
+                            check_match()
 
         draw_tiles()
 
