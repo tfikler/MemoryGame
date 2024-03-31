@@ -80,6 +80,8 @@ is_wild_mode = False
 
 pairs_found = 0
 first_turn = True
+initial_attack_mode_time = 45
+player_won = False
 
 # initialize attack mode timer
 attack_mode_timer = 0
@@ -138,7 +140,7 @@ def draw_scoreboard():
 
     if is_attack_mode:
         # Display a warning message that the attack mode is active and user have 60 seconds to finish the game
-        attack_mode_text = font.render('Attack Mode - You have 60 seconds to finish the game', True, WHITE)
+        attack_mode_text = font.render(f'Attack Mode - You have {initial_attack_mode_time} seconds to finish the game', True, WHITE)
         screen.blit(attack_mode_text, (SCREEN_WIDTH // 2 - attack_mode_text.get_width() // 2, 10))
 
     if is_wild_mode:
@@ -298,12 +300,13 @@ def reveal_tiles(index):
 
 
 def update_if_match(idx1, idx2):
-    global pairs_found, player_scores, current_player
+    global pairs_found, player_scores, current_player, player_won
     matching_tiles.extend([idx1, idx2])
     play_match_correct_sound()
     pairs_found += 1
     player_scores[current_player - 1] += 1
     if pairs_found == len(tiles) // 2:
+        player_won = True
         handle_game_won()
 
 
@@ -353,26 +356,51 @@ def handle_game_won():
 
 
 def won_menu():
-    pygame.draw.rect(screen, BUTTON_COLOR, play_again_button)
-    play_again_text = button_font.render('Play Again', True, BUTTON_TEXT_COLOR)
-    screen.blit(play_again_text, (play_again_button.x + 20, play_again_button.y + 10))
-    pygame.display.flip()
+    global is_attack_mode, initial_attack_mode_time, player_won
+    if not is_attack_mode or not player_won:
+        pygame.draw.rect(screen, BUTTON_COLOR, play_again_button)
+        play_again_text = button_font.render('Play Again', True, BUTTON_TEXT_COLOR)
+        screen.blit(play_again_text, (play_again_button.x + 20, play_again_button.y + 10))
+        pygame.display.flip()
 
-    # Wait for Play Again button click
-    waiting_for_input = True
-    while waiting_for_input:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                exit()
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                x, y = pygame.mouse.get_pos()
-                if play_again_button.collidepoint(x, y):
-                    waiting_for_input = False
-                    # Reset timers
-                    reset_timers()
-                    # Reset the game state here
-                    reset_game()
+        # Wait for Play Again button click
+        waiting_for_input = True
+        while waiting_for_input:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    exit()
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    x, y = pygame.mouse.get_pos()
+                    if play_again_button.collidepoint(x, y):
+                        waiting_for_input = False
+                        # Reset timers
+                        reset_timers()
+                        # Reset the game state here
+                        reset_game()
+    elif is_attack_mode and player_won:
+        initial_attack_mode_time -= 15
+        new_attack_mode_game()
+    elif is_attack_mode and not player_won:
+        handle_game_lost_attack_mode()
+
+
+def new_attack_mode_game():
+    global tiles, selected_tiles, matching_tiles, start_time, player_timers, player_scores, current_player, pairs_found, game_start_time, player_won
+    tiles = []
+    for color in colors * 2:  # Duplicate each color to create pairs
+        tiles.append((color, False, None))  # False indicates unmatched
+    random.shuffle(tiles)
+    selected_tiles = []
+    matching_tiles = []
+    pairs_found = 0
+    start_time = [time.time(), 0]  # Reset start times for both players
+    player_timers = [0, 0]  # Reset timers for both players
+    player_scores = [0, 0]  # Reset scores for both players
+    current_player = 1  # Reset to start with Player 1
+    draw_tiles()
+    player_won = False
+    game_start_time = time.time()
 
 
 def handle_single_player_game_won():
@@ -397,9 +425,13 @@ def handle_two_player_game_won():
 
 
 def handle_game_lost_attack_mode():
+    global player_won
+    player_won = False
+    print("Game lost!")
     screen.blit(background, (0,0))
     text = font.render("You lost!!", True, GRAY)
     screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 2 - 20))
+    print("Attack mode time is up! - before showing menu")
     won_menu()
 
 
@@ -493,9 +525,12 @@ while running:
     update_timers()
     if is_voice_control:
         voice_control_main_loop()
-    if time.time() - game_start_time > 60 and is_attack_mode:
+    if time.time() - game_start_time >= initial_attack_mode_time and is_attack_mode:
+        print("Attack mode time is up!")
+        print("Player lost!")
+        player_won = False
         handle_game_lost_attack_mode()
-        game_start_time = time.time()
+        # game_start_time = time.time()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
