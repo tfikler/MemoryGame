@@ -80,8 +80,9 @@ is_wild_mode = False
 
 pairs_found = 0
 first_turn = True
-initial_attack_mode_time = 45
+initial_attack_mode_time = 60
 player_won = False
+reset_game_mode = False
 
 # initialize attack mode timer
 attack_mode_timer = 0
@@ -119,7 +120,7 @@ def reset_timers():
 
 
 def update_timers():
-    global player_timers, start_time, pause_time
+    global player_timers, start_time, pause_time, reset_game_mode
     # Calculate elapsed time only for the current player
     if pause_time[current_player - 1] != 0:
         # If the pause time is set, calculate the time before pausing
@@ -128,7 +129,9 @@ def update_timers():
     else:
         # Otherwise, calculate the time normally
         elapsed_time = time.time() - start_time[current_player - 1]
-
+    if reset_game_mode:
+        elapsed_time = 0
+        reset_game_mode = False
     player_timers[current_player - 1] += elapsed_time
     start_time[current_player - 1] = time.time()  # Reset start time for the current player
 
@@ -164,6 +167,7 @@ def draw_scoreboard():
         # Timer Text
         timer_text_y = score_text_y + score_text.get_height() + line_spacing
         minutes, seconds = divmod(int(player_timers[i]), 60)
+        print(f"Player {i + 1} time: {minutes:02d}:{seconds:02d}")
         timer_text = board_font.render(f"Time: {minutes:02d}:{seconds:02d}", True, WHITE)
         screen.blit(timer_text, (base_x, timer_text_y))
 
@@ -373,6 +377,7 @@ def won_menu():
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     x, y = pygame.mouse.get_pos()
                     if play_again_button.collidepoint(x, y):
+                        initial_attack_mode_time = 60
                         waiting_for_input = False
                         # Reset timers
                         reset_timers()
@@ -457,7 +462,8 @@ def voice_control_main_loop():
 
 
 def reset_game():
-    global tiles, selected_tiles, matching_tiles, start_time, player_timers, player_scores, current_player, pairs_found, game_start_time
+    global tiles, selected_tiles, matching_tiles, start_time, player_timers, player_scores, current_player, pairs_found, game_start_time, reset_game_mode
+    reset_game_mode = True
     tiles = []
     for color in colors * 2:  # Duplicate each color to create pairs
         tiles.append((color, False, None))  # False indicates unmatched
@@ -465,8 +471,14 @@ def reset_game():
     selected_tiles = []
     matching_tiles = []
     pairs_found = 0
+    print(f'time: {time.time()}')
+    print(f'game_start_time: {game_start_time}')
+    print(f'player_timers: {player_timers}')
     start_time = [time.time(), 0]  # Reset start times for both players
     player_timers = [0, 0]  # Reset timers for both players
+    print(f'time: {time.time()}')
+    print(f'game_start_time: {game_start_time}')
+    print(f'player_timers: {player_timers}')
     player_scores = [0, 0]  # Reset scores for both players
     current_player = 1  # Reset to start with Player 1
     draw_tiles()
